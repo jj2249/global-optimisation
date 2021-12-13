@@ -27,7 +27,7 @@ class esSolution(Solution):
 	def __init__(self, coords, variances=None, rotangles=None):
 		Solution.__init__(self, coords)
 		if variances is None:
-			self.variances = 100*np.ones(self.dim)
+			self.variances = 1*np.ones(self.dim)
 		else:
 			self.variances = variances
 		if rotangles is None:

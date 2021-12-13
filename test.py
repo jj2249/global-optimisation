@@ -4,6 +4,7 @@ from tqdm import tqdm
 from evolutionstrategy import EvolutionStrategy
 from archive import Archive
 
+### --- Quick implementation of Eggholder function --- ###
 # plot_eggholder(2*512, ThreeD=True, Contour=True)
 # plt.show()
 
@@ -27,30 +28,30 @@ from archive import Archive
 
 # plt.plot(Dvals, naivetimes, label='naive')
 # plt.plot(Dvals, bettertimes, label='vectorised')
-# plt.show()
 
-# sol = Solution(np.random.randn(6))
-# print("run1")
-# print(sol)
-# print("\n\n\n")
-# sol.mutate()
-# print("run2")
-# print(sol)
-# print("\n\n\n")
-# sol.visualise_covariance()
-# plt.show()
 
+### --- Multiple seeds --- ###
 # seeds = np.arange(1, 40)
+# seeds = np.arange(1)
 # iterations = []
 # best_objs = []
 # mean_objs = []
 
 # for seed in tqdm(seeds):
 # 	strat = EvolutionStrategy(2, 20, 140, 10., seed)
+# 	for i in range(100):
+# 		strat.survival()
+# 		strat.mutate_offspring()
+# 		strat.recombine()
+# 	best_objs.append(strat.best_objective())
+# 	mean_objs.append(strat.mean_objective())
+
+# for seed in tqdm(seeds):
+# 	strat = EvolutionStrategy(2, 20, 140, 5., seed)
 # 	count = 0
 # 	while not strat.converged:
 # 		strat.survival()
-# 		strat.evaluate_convergence()
+# 		strat.check_convergence()
 # 		if not strat.converged:
 # 			strat.mutate_offspring()
 # 			strat.recombine()
@@ -59,44 +60,20 @@ from archive import Archive
 # 	best_objs.append(strat.best_objective())
 # 	mean_objs.append(strat.mean_objective())
 
-
-# seed = 1
-# iterations = 0
-# best_objs = []
-# mean_objs = []
-
-# strat = EvolutionStrategy(2, 20, 100, 10., seed)
-# while not strat.converged:
-# 	strat.survival()
-# 	strat.check_convergence()
-# 	if not strat.converged:
-# 		strat.mutate_offspring()
-# 		strat.recombine()
-# 	iterations += 1
-# 	best_objs.append(strat.best_objective())
-# 	mean_objs.append(strat.mean_objective())
-
-# print(strat)
+# print(mean_objs)
+# print(best_objs)
+# print(count)
+# strat.plot_parents_on_contour()
+# strat.plot_parents_on_surface()
 
 # fig = plt.figure()
 # ax1 = fig.add_subplot()
-# ax1.plot(np.arange(iterations), mean_objs, label='mean')
-# ax2 = ax1.twinx()
-# ax2.plot(np.arange(iterations), best_objs, color='orange', label='best')
-# ax1.set_ylabel('mean')
-# ax2.set_ylabel('best')
-# ax1.set_ylim(bottom=-1000)
-# ax2.set_ylim(bottom=-1000)
+# ax1.plot(np.arange(iterations), np.array(mean_objs), label='mean')
+# ax1.plot(np.arange(iterations), np.array(best_objs), color='orange', label='best')
 # fig.legend()
 # fig.show()
-# plt.show()
-# fig = plt.figure()
-# ax1 = fig.add_subplot()
-# ax1.plot(np.arange(iterations), mean_objs, label='mean')
-# ax1.plot(np.arange(iterations), best_objs, color='orange', label='best')
-# fig.legend()
-# fig.show()
-# plt.show()
+
+### --- Archive --- ###
 
 archive = Archive(30, 10., 0.1)
 
@@ -121,4 +98,5 @@ print("mean optimum found: "+str(np.mean(obj_over_seeds)))
 print("variance of solutions: "+str(np.var(obj_over_seeds)))
 print(archive)
 archive.plot_on_contour()
+
 plt.show()

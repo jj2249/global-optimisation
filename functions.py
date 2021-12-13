@@ -96,6 +96,9 @@ def plot_eggholder(samps, ThreeD=True, Contour=False):
 
 
 def arctan(num, den):
+	"""
+	Arctan with added robustness to infinite inputs
+	"""
 	if den == 0:
 		return np.pi/2.
 	else:

@@ -112,40 +112,53 @@ class EvolutionStrategy:
 
 
 	def check_convergence(self, suppress=True):
-		objectives = np.sort(np.array([offspring.objective for offspring in self.offspring]))
+		"""
+		Compare current best and worst parents to determine convergence
+		Can opt to not suppress output for a convergence readout
+		"""
+		objectives = np.sort(np.array([parent.objective for parent in self.parents]))
 		# print(objectives)
 		diff = np.abs(objectives[0]-objectives[-1])
 		if not suppress:
 			print("Absolute difference: "+str(diff))
+		# converged once absolute difference is less than user defined limit
 		if diff < self.epsilon:
 			self.converged = True
 
 
 	def best_objective(self):
+		"""
+		Return the best objective value
+		"""
 		objectives = np.sort(np.array([offspring.objective for offspring in self.offspring]))
 		return objectives[0]
 
 
 	def mean_objective(self):
-		objectives = np.array([offspring.objective for offspring in self.offspring])
+		"""
+		Return the mean objective value of parents
+		"""
+		objectives = np.array([parent.objective for parent in self.parents])
 		return np.mean(objectives, axis=0)
 
 
-	def plot_population_on_contour(self):
+	def plot_parents_on_contour(self):
 		"""
+		Plot the offspring on the contour map
 		"""
 		fig = plot_eggholder(2*512, ThreeD=False, Contour=True)
 		ax = fig.axes[0]
-		for offspring in self.offspring:
-			ax.scatter(offspring.coords[0], offspring.coords[1])
+		for parent in self.parents:
+			ax.scatter(parent.coords[0], parent.coords[1])
 		return fig
 
 
-	def plot_population_on_surface(self):
+	def plot_parents_on_surface(self):
 		"""
+		Plot the offspring on the surface
 		"""
 		fig = plot_eggholder(2*512, ThreeD=True, Contour=False)
 		ax = fig.axes[0]
-		for offspring in self.offspring:
-			ax.scatter(offspring.coords[0], offspring.coords[1], offspring.objective)
+		for parent in self.parents:
+			ax.scatter(parent.coords[0], parent.coords[1], parent.objective)
 		return fig
