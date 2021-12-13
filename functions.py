@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+CHOL_FAC = 1e-6
 
 def eggholder_naive(x):
 	"""
