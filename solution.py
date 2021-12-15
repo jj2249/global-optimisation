@@ -10,7 +10,6 @@ class Solution:
 
 		# important dimensions of problem
 		self.dim = self.coords.shape[0]
-		self.npairs = int(self.dim*(self.dim-1)/2.)
 		
 		# automatically evaluate objective if None type supplied
 		if objective is None:
@@ -40,6 +39,7 @@ class esSolution(Solution):
 	def __init__(self, coords, variances=None, rotangles=None, objective=None):
 		Solution.__init__(self, coords, objective=objective)
 
+		self.npairs = int(self.dim*(self.dim-1)/2.)
 		# strategy parameters specific to the evolution strategy formulation of a solution
 		self.variances = variances
 		self.rotangles = rotangles

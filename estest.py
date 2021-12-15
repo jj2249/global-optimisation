@@ -4,31 +4,6 @@ from tqdm import tqdm
 from evolutionstrategy import EvolutionStrategy
 from archive import Archive
 
-### --- Quick implementation of Eggholder function --- ###
-# plot_eggholder(2*512, ThreeD=True, Contour=True)
-# plt.show()
-
-# evals = 15000
-# Dvals = np.arange(6, 206, 20)
-
-# naivetimes = []
-# bettertimes = []
-
-# for D in tqdm(Dvals):
-# 	x = np.random.randn(D)
-# 	start1 = time()
-# 	for _ in range(evals):
-# 		eggholder_naive(x)
-# 	naivetimes.append(time()-start1)
-
-# 	start2 = time()
-# 	for _ in range(evals):
-# 		eggholder(x)
-# 	bettertimes.append(time()-start2)
-
-# plt.plot(Dvals, naivetimes, label='naive')
-# plt.plot(Dvals, bettertimes, label='vectorised')
-
 
 ### --- Multiple seeds --- ###
 # seeds = np.arange(1, 40)
@@ -87,7 +62,7 @@ for seed in tqdm(seeds):
 		if not strat.converged:
 			strat.mutate_offspring()
 			strat.recombine()
-	obj_over_seeds.append(strat.best_objective())
+	obj_over_seeds.append(strat.archive.get_current_optimum().objective)
 
 obj_over_seeds = np.array(obj_over_seeds)
 print("best optimum found: "+str(np.min(obj_over_seeds)))

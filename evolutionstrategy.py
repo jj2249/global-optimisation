@@ -44,10 +44,11 @@ class EvolutionStrategy:
 		"""
 		offspring = []
 		for _ in range(self.noffspring):
-			x = 500*np.random.randn(self.dimension)
+			# x = 500*np.random.randn(self.dimension)
 			# reject until in the feasible region
-			while not (np.all(x <=512.) and np.all(x >= -512)):
-				x = 500*np.random.randn(self.dimension)
+			# while not (np.all(x <=512.) and np.all(x >= -512)):
+				# x = 500*np.random.randn(self.dimension)
+			x = np.random.uniform(low=-512., high=512., size=self.dimension)
 
 			# new offspring at the proposed coordinates with Identitiy covariance matrix
 			offspring.append(esSolution(x, np.ones(self.dimension), np.zeros(int(self.dimension*(self.dimension-1)/2.))))

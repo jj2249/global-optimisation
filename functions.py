@@ -48,8 +48,7 @@ def eggholder(x):
 	assert x.shape[0] >= 2, "Eggholder function not defined on spaces below 2D"
 	# dimension of problem
 	n = x.shape[0]
-	for val in x:
-		if np.any(val > 512.) or np.any(val < -512.):
+	if np.any(x > 512.) or np.any(x < -512.):
 			return np.inf
 	# roll x to align the adjacent dimensions
 	xr = np.roll(x, -1, axis=0)[:n-1]

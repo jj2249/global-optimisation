@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 obj_over_seeds = []
 # seeds = np.arange(1)
-seeds = np.arange(0, 20)
+seeds = np.arange(0, 5)
 for seed in tqdm(seeds):
 	strat = SimulatedAnnealing(6, 10, 100, 500, seed, suppress_output=True)
 	strat.anneal(record_video=False)

@@ -4,6 +4,7 @@ from solution import saSolution
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from archive import Archive
+from scipy import stats as ss
 
 
 class SimulatedAnnealing:
@@ -65,11 +66,11 @@ class SimulatedAnnealing:
 
 		# shoot a spread of points at the domain and keep only the best one
 		for i in range(shotgun_samps):
-			x = 500*np.random.randn(self.dimension)
-			# reject until in the feasible region
-			while not (np.all(x <=512.) and np.all(x >= -512)):
-				x = 500*np.random.randn(self.dimension)
-
+			# x = 500*np.random.randn(self.dimension)
+			# # reject until in the feasible region
+			# while not (np.all(x <=512.) and np.all(x >= -512)):
+			# 	x = 500*np.random.randn(self.dimension)
+			x = np.random.uniform(low=-512., high=512., size=self.dimension)
 			# candidate solution in the feasible region
 			candidate = saSolution(x)
 			if candidate.objective < best_objective:
