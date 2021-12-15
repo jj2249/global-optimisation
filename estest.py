@@ -75,17 +75,14 @@ from archive import Archive
 
 ### --- Archive --- ###
 
-archive = Archive(30, 10., 0.1)
 
 obj_over_seeds = []
-seeds = np.arange(1)
-# seeds = np.arange(0, 51)
+# seeds = np.arange(1)
+seeds = np.arange(0, 20)
 for seed in tqdm(seeds):
-	strat = EvolutionStrategy(2, 20, 140, 10., seed)
+	strat = EvolutionStrategy(6, 20, 140, 10., seed)
 	while not strat.converged:
 		strat.survival()
-		for parent in strat.parents:
-			archive.check_candidate(parent)
 		strat.check_convergence()
 		if not strat.converged:
 			strat.mutate_offspring()
@@ -93,10 +90,11 @@ for seed in tqdm(seeds):
 	obj_over_seeds.append(strat.best_objective())
 
 obj_over_seeds = np.array(obj_over_seeds)
-print(obj_over_seeds)
+print("best optimum found: "+str(np.min(obj_over_seeds)))
 print("mean optimum found: "+str(np.mean(obj_over_seeds)))
 print("variance of solutions: "+str(np.var(obj_over_seeds)))
-print(archive)
-archive.plot_on_contour()
-
-plt.show()
+# print(archive)
+# archive.plot_on_contour()
+# strat.plot_parents_on_contour()
+# archive.plot_on_surface()
+# plt.show()

@@ -48,7 +48,9 @@ def eggholder(x):
 	assert x.shape[0] >= 2, "Eggholder function not defined on spaces below 2D"
 	# dimension of problem
 	n = x.shape[0]
-
+	for val in x:
+		if np.any(val > 512.) or np.any(val < -512.):
+			return np.inf
 	# roll x to align the adjacent dimensions
 	xr = np.roll(x, -1, axis=0)[:n-1]
 	# dont need the final pair (x0, xn-1)
@@ -86,7 +88,7 @@ def plot_eggholder(samps, ThreeD=True, Contour=False):
 
 	if Contour and (not ThreeD):
 		ax = fig.add_subplot()
-		ax.contour(xx1, xx2, z, levels=10)
+		ax.contour(xx1, xx2, z, levels=10, zorder=-1)
 
 	if (not Contour) and ThreeD:
 		ax = fig.add_subplot(projection='3d')

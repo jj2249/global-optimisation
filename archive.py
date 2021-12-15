@@ -53,6 +53,12 @@ class Archive:
 		return similar_idx, closest_idx, closest_distance
 
 
+	def get_current_optimum(self):
+		objectives = np.array([archived.objective for archived in self.archived_solutions])
+		idx = np.argmin(objectives)
+		return self.archived_solutions[idx]
+
+
 	def check_candidate(self, candidate):
 		"""
 		Incorporate a new candidate solution using the logic in the lecture notes

@@ -2,20 +2,29 @@ import numpy as np
 from functions import *
 from solution import esSolution
 import matplotlib.pyplot as plt
-
+from archive import Archive
 
 class EvolutionStrategy:
 	def __init__(self, dimension, nparents, noffspring, epsilon, seed):
-		self.seed = seed
 		self.dimension = dimension
+		
+		# parameters for the overall strategy
 		self.nparents = nparents
 		self.noffspring = noffspring
 		self.epsilon = epsilon
+
+		# model not initially converged
 		self.converged = False
+
 		# Generate an initial population
 		self.offspring = None
 		self.generate_offspring()
 		self.parents = None
+
+		self.archive = Archive(30, 10., 0.1)
+
+		# seed the rng
+		self.seed = seed
 		np.random.seed(self.seed)
 
 
@@ -31,28 +40,38 @@ class EvolutionStrategy:
 	def generate_offspring(self):
 		"""
 		Generate a set of feasible offspring
+		- 1 objective evaluation per offspring
 		"""
 		offspring = []
 		for _ in range(self.noffspring):
 			x = 500*np.random.randn(self.dimension)
 			# reject until in the feasible region
 			while not (np.all(x <=512.) and np.all(x >= -512)):
-				x = np.random.randn(self.dimension)
-			offspring.append(esSolution(x))
+				x = 500*np.random.randn(self.dimension)
+
+			# new offspring at the proposed coordinates with Identitiy covariance matrix
+			offspring.append(esSolution(x, np.ones(self.dimension), np.zeros(int(self.dimension*(self.dimension-1)/2.))))
+
+		# full initial population
 		self.offspring = np.array(offspring)
 
 
 	def survival(self):
 		"""
 		Select the best solutions (lowest objective) and assign as parents
+		- no objective evaluations
 		"""
 		# collect offspring objectives for sorting
 		objectivef = np.array([off.objective for off in self.offspring])
+
 		# sort the offspring in increasing objective order (best to worst)
 		idx = np.argsort(objectivef)
-		strongest = np.take(self.offspring, idx)
+
 		# assign the the new parents
+		strongest = np.take(self.offspring, idx, axis=0)
 		self.parents = strongest[:self.nparents]
+		for parent in self.parents:
+			self.archive.check_candidate(parent)
 
 
 	def recombine(self):
@@ -69,7 +88,7 @@ class EvolutionStrategy:
 			# child coordinates determined by discrete recombination
 			child = np.zeros(self.dimension)
 			for i in range(self.dimension):
-				# unbiased coin toss to determine which parent
+				# unbiased coin toss to determine which parent passes it's coordinate on
 				if np.random.uniform() > 0.5:
 					child[i] = self.parents[p2c].coords[i]
 				else:
@@ -81,11 +100,15 @@ class EvolutionStrategy:
 				# resample parents until a valid configuration found
 				p1s = np.random.randint(0, self.nparents)
 				p2s = np.random.randint(0, self.nparents)
+
 				# new strategy parameters are the weighted sum of the two parents
 				weight = 0.5
 				new_variances = weight*self.parents[p1s].variances + (1-weight)*self.parents[p2s].variances
 				new_rotangles = weight*self.parents[p1s].rotangles + (1-weight)*self.parents[p2s].rotangles
-				new_child = esSolution(child, new_variances, new_rotangles)
+
+				# new child initialised with infinite objective to avoid calculating the objective before we know that this configuration is positive definite
+				# can't use None type since this will cause constructor to evaluate the objective
+				new_child = esSolution(child, variances=new_variances, rotangles=new_rotangles, objective=np.inf)
 				try:
 					C = new_child.covariance_matrix()
 					Cchol = np.linalg.cholesky(C+CHOL_FAC*np.eye(self.dimension))
@@ -93,14 +116,12 @@ class EvolutionStrategy:
 				except np.linalg.LinAlgError:
 					pass
 
+			# evaluate the valid child's objective and add to the container of offspring
+			new_child.evaluate_objective()
 			new_offspring.append(new_child)
 
 		# store the new set of offspring
 		self.offspring = np.array(new_offspring)
-
-		# update each solutions objective
-		for offspring in self.offspring:
-			offspring.evaluate_objective()
 
 
 	def mutate_offspring(self):
@@ -116,11 +137,14 @@ class EvolutionStrategy:
 		Compare current best and worst parents to determine convergence
 		Can opt to not suppress output for a convergence readout
 		"""
+		# sorted objectives of the parents
 		objectives = np.sort(np.array([parent.objective for parent in self.parents]))
-		# print(objectives)
+		
+		# absolute difference between best and worst parent
 		diff = np.abs(objectives[0]-objectives[-1])
 		if not suppress:
 			print("Absolute difference: "+str(diff))
+
 		# converged once absolute difference is less than user defined limit
 		if diff < self.epsilon:
 			self.converged = True
