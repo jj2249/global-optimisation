@@ -54,9 +54,20 @@ class Archive:
 
 
 	def get_current_optimum(self):
+		"""
+		Current optimum instance of the solution class in the archive
+		"""
 		objectives = np.array([archived.objective for archived in self.archived_solutions])
 		idx = np.argmin(objectives)
 		return self.archived_solutions[idx]
+
+
+	def get_mean_archived_solution(self):
+		"""
+		Mean objective in the archive
+		"""
+		objectives = np.array([archived.objective for archived in self.archived_solutions])
+		return np.mean(objectives, axis=0)
 
 
 	def check_candidate(self, candidate):

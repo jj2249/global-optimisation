@@ -10,7 +10,7 @@ from time import time
 # plt.show()
 
 evals = 15000
-Dvals = np.arange(6, 556, 25)
+Dvals = np.arange(6, 256, 25)
 
 naivetimes = []
 bettertimes = []
@@ -33,7 +33,7 @@ ax2 = ax1.twinx()
 ax1.plot(Dvals, naivetimes, label='naive')
 # ax1.plot(Dvals, bettertimes, label='vectorised', color='orange')
 ax2.plot(Dvals, bettertimes, label='vectorised', color='orange')
-ax1.legend()
+fig.legend()
 ax1.set_xlabel('Dimension')
 ax1.set_ylabel('Naive time (s)')
 ax2.set_ylabel('Vectorised time (s)')

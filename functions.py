@@ -18,6 +18,8 @@ def eggholder_naive(x):
 	assert x.shape[0] >= 2, "Eggholder function not defined on spaces below 2D"
 	# dimension of problem
 	n = x.shape[0]
+	if np.any(x > 512.) or np.any(x < -512.):
+			return np.inf
 	# sum container
 	total = 0
 	# implement sum over each pair of adjacent dimensions
@@ -67,7 +69,7 @@ def eggholder(x):
 	return np.sum(summand, axis=0)
 
 
-def plot_eggholder(samps, ThreeD=True, Contour=False):
+def plot_eggholder(samps, ThreeD=True, Contour=False, title=''):
 	# axes
 	x1 = np.linspace(-512, 512, samps)
 	x2 = np.linspace(-512, 512, samps)
@@ -78,16 +80,17 @@ def plot_eggholder(samps, ThreeD=True, Contour=False):
 	z = eggholder(x)
 
 	fig = plt.figure()
+	fig.suptitle(title)
 	# conditions for choice of plots
 	if ThreeD and Contour:
 		ax1 = fig.add_subplot(121, projection='3d')
 		ax1.plot_surface(xx1, xx2, z, cmap='viridis', linewidth=0, antialiased=False)
 		ax2 = fig.add_subplot(122)
-		ax2.contour(xx1, xx2, z, levels=10)
+		ax2.contour(xx1, xx2, z, levels=5)
 
 	if Contour and (not ThreeD):
 		ax = fig.add_subplot()
-		ax.contour(xx1, xx2, z, levels=10, zorder=-1)
+		ax.contour(xx1, xx2, z, levels=5, zorder=-1)
 
 	if (not Contour) and ThreeD:
 		ax = fig.add_subplot(projection='3d')

@@ -8,20 +8,26 @@ from scipy import stats as ss
 
 
 class SimulatedAnnealing:
-	def __init__(self, dimension, shotgun_samps, initial_samps, L, seed, suppress_output=False, record_history=False):
+	def __init__(self, dimension, shotgun_samps, initial_samps, L, seed, alpha, max_step, min_step, suppress_output=False, record_history=False):
 		self.dimension = dimension
 		# intial step size matrix
-		self.D = 50*np.eye(self.dimension)
+		self.D = max_step*np.eye(self.dimension)
 		self.R = None
 
 		# parameters for updating D and T
 		self.gamma = 0.1
 		self.omega = 2.1
-		self.alpha = 0.8
+		self.alpha = alpha
+		self.min_step = min_step
+		self.max_step = max_step
+
+		self.converged = False
 
 		# initialise chain using shotgun initialisation
+		self.shotgun_samps = shotgun_samps
 		self.x = self.shotgun_initialisation(shotgun_samps)
 		# initial temperature estimation
+		self.initial_samps = initial_samps
 		self.T = self.estimate_initial_temp(0.8, initial_samps)
 		self.suppress_output = suppress_output
 
@@ -96,7 +102,7 @@ class SimulatedAnnealing:
 			# propose inital search direction
 			u = np.random.uniform(low=-1., high=1., size=self.dimension)
 			step = D @ u
-			while not (np.all(point.coords+step<=512) and np.all(point.coords+step>=-512)):
+			while not (np.all(point.coords+step<=512.) and np.all(point.coords+step>=-512.)):
 				u = np.random.uniform(low=-1., high=1., size=self.dimension)
 				step = D @ u
 
@@ -105,7 +111,7 @@ class SimulatedAnnealing:
 
 			# change in the objective
 			new_obj = eggholder(point.coords+step)
-			deltaf =  new_obj- point.objective
+			deltaf =  new_obj - point.objective
 			
 			if deltaf > 0.:
 				# scale the increases
@@ -119,11 +125,16 @@ class SimulatedAnnealing:
 			# update D
 			R = np.diag(np.abs(step))
 			D = (1-self.gamma)*D + self.gamma*self.omega*R
+			d = np.diag(D)
+			d = np.where(d > self.min_step, d, self.min_step*np.ones(self.dimension))
+			d = np.where(d < self.max_step, d, self.max_step*np.ones(self.dimension))
+			D = np.diag(d)
 
 		# mean increase in the objective function
 		deltafplus = pos_sum/num_pos
 		# corresponding T for probability of accepting upwards move to be chi
 		return -1*deltafplus / np.log(chi)
+
 
 	# def increment_chain(self, acceptances, funcvals):
 	def increment_chain(self, acceptances):
@@ -168,24 +179,31 @@ class SimulatedAnnealing:
 				self.D = (1-self.gamma)*self.D + self.gamma*self.omega*self.R
 				acceptances += 1
 				# funcvals.append(self.x.objective)
-
+		self.check_D()
 		# add to chain if tracking the history
 		if self.record_history:
 			self.history.append(self.x)
 		return acceptances#, funcvals
 
 
-	def anneal(self, record_video=False, vid_folder=None, fig=None):
+	def anneal(self, record_trajectory=False, chain_folder=None, record_video=False, vid_folder=None, fig=None):
 		"""
 		Run the full annealing schedule
 		"""
 		# option to visualise path of chain
 		if record_video:
 			ax = fig.axes[0]
+		
+		number_of_fails = 0
 
+		best_objectives = []
+		prev_best = np.inf
+		mean_objectives = []
+		Dtrace = []
 		# cap the total number of steps allowed in the full schedule
 		total_iters = 0
-		while (total_iters < 15000):
+		# while (total_iters < 12000):
+		while (not self.converged) and total_iters < (15000-self.initial_samps-self.shotgun_samps-self.L):
 			# start of chain at a new temperature
 			if not self.suppress_output:
 				print(10*'-'+"Current Temp"+10*'-'+'\n'+str(self.T))
@@ -194,23 +212,51 @@ class SimulatedAnnealing:
 			# number of proposed moves at this temperature
 			iters = 0
 			# funcvals = []
-			
+			# number of temps considered
+			temperatures = 0
+			if record_trajectory:
+				prev_point = self.x.coords
+				fig = plot_eggholder(2*512, ThreeD=False, Contour=True)
+				fig.suptitle("Temperature: {}".format(round(self.T, 3)))
+				ax = fig.axes[0]
 			# run each chain until either a certain number of acceptances achieved or a certain number of proposals are made, whichever is first
 			while (acceptances<0.6*self.L) and (iters<self.L):
 				acceptances = self.increment_chain(acceptances)
 				# acceptances, funcvals = self.increment_chain(acceptances, funcvals)
-
+				Dtrace.append(np.trace(self.D))
 				# generate the plot for the video
 				if record_video:
 					point = ax.scatter(self.x.coords[0], self.x.coords[1], zorder=1)
-					plt.savefig(vid_folder+"/file%02d"%iters)
+					plt.savefig(vid_folder+"/file%02d"%(total_iters+iters))
 					point.remove()
+				if record_trajectory:
+					ax.plot(np.array([prev_point[0], self.x.coords[0]]), np.array([prev_point[1], self.x.coords[1]]), color='red',zorder=1)
+					prev_point=self.x.coords
 
 				iters += 1
 				
 				# check the current location as a candidate for archiving
 				self.archive.check_candidate(self.x)
+				# best_objectives.append(self.archive.get_current_optimum().objective)
+				# mean_objectives.append(self.archive.get_mean_archived_solution())
+				best_objectives.append(self.x.objective)
+				mean_objectives.append(self.archive.get_current_optimum().objective)
 
+
+
+			# algorithm deemed to have converged if no improvement made within the whole chain 
+			if best_objectives[-1] == prev_best:
+					number_of_fails += 1
+					if number_of_fails >= 8:
+						return best_objectives, mean_objectives, total_iters#, Dtrace
+			else:
+				number_of_fails = 0
+			prev_best = best_objectives[-1]
+
+			temperatures += 1
+			if record_trajectory:
+				plt.savefig(chain_folder+"/file%02d"%(total_iters))
+				plt.close(fig)
 			# end of the chain at this temperature so record number of iterations
 			total_iters += iters
 
@@ -219,24 +265,52 @@ class SimulatedAnnealing:
 			
 			# decrement temperature
 			self.T = self.alpha * self.T
-			# self.x = self.archive.get_current_optimum().copy_solution()
+			self.x = self.archive.get_current_optimum().copy_solution()
+		return best_objectives, mean_objectives, total_iters#, Dtrace
+
+
+	def check_D(self):
+		"""
+		Check D matrix for any invalid step size limits
+		"""
+		d = np.diag(self.D)
+		# replace values with the bounds where required
+		d = np.where(d > self.min_step, d, self.min_step*np.ones(self.dimension))
+		d = np.where(d < self.max_step, d, self.max_step*np.ones(self.dimension))
+		self.D = np.diag(d)
+
+
+	def best_objective(self):
+		"""
+		Return the best objective value
+		"""
+		objectives = np.sort(np.array([x.objective for x in self.x]))
+		return objectives[0]
+
+
+	def mean_objective(self):
+		"""
+		Return the mean objective value of parents
+		"""
+		objectives = np.array([x.objective for x in self.x])
+		return np.mean(objectives, axis=0)
 
 
 	def plot_history_on_contour(self):
-			"""
-			Plot the chain on the contour map
-			"""
-			fig = plot_eggholder(2*512, ThreeD=False, Contour=True)
-			ax = fig.axes[0]
-			for point in self.history:
-				ax.scatter(point.coords[0], point.coords[1])
-			return fig
+		"""
+		Plot the chain on the contour map
+		"""
+		fig = plot_eggholder(2*512, ThreeD=False, Contour=True)
+		ax = fig.axes[0]
+		for point in self.history:
+			ax.scatter(point.coords[0], point.coords[1])
+		return fig
 
 	def plot_current_on_contour(self):
-			"""
-			Plot the current point on the contour map
-			"""
-			fig = plot_eggholder(2*512, ThreeD=False, Contour=True)
-			ax = fig.axes[0]
-			ax.scatter(self.x.coords[0], self.x.coords[1])
-			return fig
+		"""
+		Plot the current point on the contour map
+		"""
+		fig = plot_eggholder(2*512, ThreeD=False, Contour=True)
+		ax = fig.axes[0]
+		ax.scatter(self.x.coords[0], self.x.coords[1])
+		return fig
