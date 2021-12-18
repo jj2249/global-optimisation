@@ -72,13 +72,11 @@ class SimulatedAnnealing:
 
 		# shoot a spread of points at the domain and keep only the best one
 		for i in range(shotgun_samps):
-			# x = 500*np.random.randn(self.dimension)
-			# # reject until in the feasible region
-			# while not (np.all(x <=512.) and np.all(x >= -512)):
-			# 	x = 500*np.random.randn(self.dimension)
 			x = np.random.uniform(low=-512., high=512., size=self.dimension)
 			# candidate solution in the feasible region
 			candidate = saSolution(x)
+
+			# check if it's the best
 			if candidate.objective < best_objective:
 				best_solution = candidate
 				best_objective = best_solution.objective
@@ -124,6 +122,8 @@ class SimulatedAnnealing:
 
 			# update D
 			R = np.diag(np.abs(step))
+
+			# check against max and min values of D
 			D = (1-self.gamma)*D + self.gamma*self.omega*R
 			d = np.diag(D)
 			d = np.where(d > self.min_step, d, self.min_step*np.ones(self.dimension))
@@ -178,12 +178,14 @@ class SimulatedAnnealing:
 				self.R = np.diag(np.abs(step))
 				self.D = (1-self.gamma)*self.D + self.gamma*self.omega*self.R
 				acceptances += 1
-				# funcvals.append(self.x.objective)
+
 		self.check_D()
+
 		# add to chain if tracking the history
 		if self.record_history:
 			self.history.append(self.x)
-		return acceptances#, funcvals
+
+		return acceptances
 
 
 	def anneal(self, record_trajectory=False, chain_folder=None, record_video=False, vid_folder=None, fig=None):
@@ -195,35 +197,31 @@ class SimulatedAnnealing:
 			ax = fig.axes[0]
 		
 		number_of_fails = 0
-
-		best_objectives = []
-		prev_best = np.inf
-		mean_objectives = []
-		Dtrace = []
 		# cap the total number of steps allowed in the full schedule
 		total_iters = 0
-		# while (total_iters < 12000):
+
 		while (not self.converged) and total_iters < (15000-self.initial_samps-self.shotgun_samps-self.L):
 			# start of chain at a new temperature
 			if not self.suppress_output:
 				print(10*'-'+"Current Temp"+10*'-'+'\n'+str(self.T))
+
 			# number of accepted moves at this temperature
 			acceptances = 0
+
 			# number of proposed moves at this temperature
 			iters = 0
-			# funcvals = []
-			# number of temps considered
-			temperatures = 0
+
+			# plotting
 			if record_trajectory:
 				prev_point = self.x.coords
 				fig = plot_eggholder(2*512, ThreeD=False, Contour=True)
 				fig.suptitle("Temperature: {}".format(round(self.T, 3)))
 				ax = fig.axes[0]
+
 			# run each chain until either a certain number of acceptances achieved or a certain number of proposals are made, whichever is first
 			while (acceptances<0.6*self.L) and (iters<self.L):
 				acceptances = self.increment_chain(acceptances)
-				# acceptances, funcvals = self.increment_chain(acceptances, funcvals)
-				Dtrace.append(np.trace(self.D))
+
 				# generate the plot for the video
 				if record_video:
 					point = ax.scatter(self.x.coords[0], self.x.coords[1], zorder=1)
@@ -242,31 +240,26 @@ class SimulatedAnnealing:
 				best_objectives.append(self.x.objective)
 				mean_objectives.append(self.archive.get_current_optimum().objective)
 
-
-
 			# algorithm deemed to have converged if no improvement made within the whole chain 
 			if best_objectives[-1] == prev_best:
 					number_of_fails += 1
 					if number_of_fails >= 8:
-						return best_objectives, mean_objectives, total_iters#, Dtrace
+						self.converged = 0
 			else:
 				number_of_fails = 0
 			prev_best = best_objectives[-1]
 
-			temperatures += 1
 			if record_trajectory:
 				plt.savefig(chain_folder+"/file%02d"%(total_iters))
 				plt.close(fig)
+
 			# end of the chain at this temperature so record number of iterations
 			total_iters += iters
 
-			# self.alpha = max(0.5, np.exp(-0.7*self.T / np.sqrt(np.var(funcvals))))
-			# print(self.alpha)
 			
 			# decrement temperature
 			self.T = self.alpha * self.T
 			self.x = self.archive.get_current_optimum().copy_solution()
-		return best_objectives, mean_objectives, total_iters#, Dtrace
 
 
 	def check_D(self):
