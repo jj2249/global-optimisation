@@ -200,6 +200,10 @@ class SimulatedAnnealing:
 		# cap the total number of steps allowed in the full schedule
 		total_iters = 0
 
+		# for convergence criterion
+		prev_best = np.inf
+		best_objectives = [prev_best]
+
 		while (not self.converged) and total_iters < (15000-self.initial_samps-self.shotgun_samps-self.L):
 			# start of chain at a new temperature
 			if not self.suppress_output:
@@ -235,10 +239,6 @@ class SimulatedAnnealing:
 				
 				# check the current location as a candidate for archiving
 				self.archive.check_candidate(self.x)
-				# best_objectives.append(self.archive.get_current_optimum().objective)
-				# mean_objectives.append(self.archive.get_mean_archived_solution())
-				best_objectives.append(self.x.objective)
-				mean_objectives.append(self.archive.get_current_optimum().objective)
 
 			# algorithm deemed to have converged if no improvement made within the whole chain 
 			if best_objectives[-1] == prev_best:
